@@ -23,6 +23,7 @@ COPY --from=builder /app/.venv /app/.venv
 # Copy application code
 COPY src/ ./src/
 COPY .env.example ./.env.example
+COPY credentials.json ./credentials.json
 
 # Create uploads directory
 RUN mkdir -p uploads
