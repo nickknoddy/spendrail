@@ -64,6 +64,54 @@ Categories should be specific. Only the following categories are allowed:
 Provide at least 1 and up to 5 relevant categories, ordered by confidence (highest first).
 Only respond with the JSON object, no additional text."""
 
+# Text classification prompt
+TEXT_CLASSIFICATION_PROMPT = """Analyze this text and categorize it. The text may describe a bill, receipt, transaction, or expense.
+
+Provide your response as a JSON object with the following structure:
+
+{
+    "categories": [
+        {
+            "name": "category_name",
+            "confidence": 0.95,
+            "description": "Brief description of why this category applies"
+        }
+    ],
+    "primary_category": "main_category_name",
+    "bill_recognised": true,
+    "bill_details": {
+        "total_amount": 1234.56,
+        "currency": "INR",
+        "tax": 50.00,
+        "vendor_name": "Store Name",
+        "date": "2024-12-25",
+        "items": [
+            {
+                "name": "Item description",
+                "quantity": 1,
+                "price": 100.00,
+                "currency": "INR"
+            }
+        ]
+    },
+    "summary": "Brief summary of what the text describes"
+}
+
+IMPORTANT RULES:
+1. bill_recognised must be a boolean (true/false), set to true if the text describes a bill, receipt, invoice, expense, or transaction
+2. If bill_recognised is true, include bill_details with amounts extracted from the text
+3. If bill_recognised is false, set bill_details to null
+4. Extract amounts, items, vendor names, and dates mentioned in the text
+5. Currency should be detected from context (INR, USD, EUR, etc.), default to INR
+
+Categories should be specific. Only the following categories are allowed:
+- food
+- fuel
+- medical
+
+Provide at least 1 and up to 5 relevant categories, ordered by confidence (highest first).
+Only respond with the JSON object, no additional text."""
+
 # Allowed categories for category_matched check
 ALLOWED_CATEGORIES = {"food", "fuel", "medical"}
 
@@ -210,6 +258,94 @@ class GeminiService:
                 details={"error_type": type(e).__name__},
             ) from e
 
+    async def categorize_text(
+        self,
+        text: str,
+        custom_prompt: str | None = None,
+    ) -> ImageCategoryResponse:
+        """
+        Categorize text using Gemini API.
+
+        Args:
+            text: Text to analyze (bill description, transaction, etc.)
+            custom_prompt: Optional custom categorization prompt
+
+        Returns:
+            ImageCategoryResponse with categorization results
+
+        Raises:
+            GeminiAPIError: If the API call fails
+        """
+        if not self.is_configured():
+            raise GeminiAPIError(
+                "Gemini API is not configured. Please set GEMINI_API_KEY."
+            )
+
+        prompt = custom_prompt or TEXT_CLASSIFICATION_PROMPT
+        full_prompt = f"{prompt}\n\nText to analyze:\n{text}"
+
+        try:
+            logger.info(
+                "gemini_text_categorize_start",
+                text_length=len(text),
+            )
+
+            # Generate content with text - measure time
+            api_start_time = time.perf_counter()
+
+            response = self._client.models.generate_content(
+                model=self.settings.gemini_model,
+                contents=full_prompt
+            )
+
+            api_duration_ms = (time.perf_counter() - api_start_time) * 1000
+
+            logger.info(
+                "gemini_text_api_response",
+                duration_ms=round(api_duration_ms, 2),
+            )
+
+            # Parse response
+            raw_text = response.text.strip()
+
+            # Clean up response if wrapped in markdown code block
+            if raw_text.startswith("```"):
+                raw_text = raw_text.split("\n", 1)[1]
+                raw_text = raw_text.rsplit("```", 1)[0].strip()
+
+            result = self._parse_response(raw_text, "text_input")
+
+            logger.info(
+                "gemini_text_categorize_success",
+                primary_category=result.primary_category,
+                category_matched=result.category_matched,
+                num_categories=len(result.categories),
+                api_duration_ms=round(api_duration_ms, 2),
+            )
+
+            return result
+
+        except json.JSONDecodeError as e:
+            logger.error(
+                "gemini_text_parse_error",
+                error=str(e),
+                raw_response=raw_text[:500] if raw_text else None,
+            )
+            raise GeminiAPIError(
+                f"Failed to parse Gemini response: {e}",
+                details={"raw_response": raw_text[:500] if raw_text else None},
+            ) from e
+
+        except Exception as e:
+            logger.exception(
+                "gemini_text_categorize_error",
+                error=str(e),
+            )
+            raise GeminiAPIError(
+                f"Failed to categorize text: {e}",
+                details={"error_type": type(e).__name__},
+            ) from e
+
     def _parse_response(self, raw_text: str, filename: str) -> ImageCategoryResponse:
         """Parse the Gemini API response into structured format."""
         data: dict[str, Any] = json.loads(raw_text)
@@ -257,15 +393,19 @@ class GeminiService:
                     items.append(BillItem(
                         name=item.get("name") or "Unknown item",
                         quantity=int(qty) if qty else 1,
-                        price=float(item.get("price", 0)),
+                        price=float(item.get("price") or 0),
                         currency=item.get("currency") or "INR",
                     ))
 
+            # Safely extract numeric values - handle None and null
+            total_raw = bill_details_raw.get("total_amount")
+            tax_raw = bill_details_raw.get("tax")
+            
             bill_details = BillDetails(
-                total_amount=float(bill_details_raw["total_amount"]) if bill_details_raw.get("total_amount") else 0.0,
+                total_amount=float(total_raw) if total_raw is not None else 0.0,
                 currency=bill_details_raw.get("currency") or "INR",
                 items=items,
-                tax=float(bill_details_raw["tax"]) if bill_details_raw.get("tax") else 0.0,
+                tax=float(tax_raw) if tax_raw is not None else 0.0,
                 vendor_name=bill_details_raw.get("vendor_name") or "",
                 date=bill_details_raw.get("date") or "",
             )

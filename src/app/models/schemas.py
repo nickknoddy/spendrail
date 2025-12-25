@@ -41,6 +41,15 @@ class ResponseModel(BaseModel):
         return super().model_dump(**kwargs)
 
 
+# ==================== Request Models ====================
+
+
+class TextClassificationRequest(ResponseModel):
+    """Request for text classification."""
+
+    text: str = Field(..., min_length=1, max_length=10000, description="Text to classify (bill description, transaction, etc.)")
+
+
 # ==================== Response Models ====================
 
 

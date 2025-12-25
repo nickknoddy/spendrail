@@ -12,6 +12,7 @@ from app.models.schemas import (
     ImageCategoryResponse,
     TaskStatusEnum,
     TaskStatusResponse,
+    TextClassificationRequest,
 )
 
 __all__ = [
@@ -26,5 +27,6 @@ __all__ = [
     "ImageCategoryResponse",
     "TaskStatusEnum",
     "TaskStatusResponse",
+    "TextClassificationRequest",
 ]
 

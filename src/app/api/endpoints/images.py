@@ -9,6 +9,7 @@ from app.models.schemas import (
     ImageCategoryResponse,
     TaskStatusEnum,
     TaskStatusResponse,
+    TextClassificationRequest,
 )
 from app.services.gemini import get_gemini_service
 from app.services.image_processor import get_image_processor
@@ -127,3 +128,40 @@ async def get_categorization_status(task_id: str) -> TaskStatusResponse:
         )
 
     return result
+
+
+@router.post(
+    "/categorize/text",
+    response_model=ImageCategoryResponse,
+    summary="Categorize text",
+    description="Classify text into categories (food, fuel, medical) using Gemini AI",
+)
+async def categorize_text(
+    request: TextClassificationRequest,
+) -> ImageCategoryResponse:
+    """
+    Categorize text describing a bill, receipt, transaction, or expense.
+
+    The text is analyzed and classified into categories (food, fuel, medical)
+    with the same response structure as image categorization.
+
+    Example input:
+    - "Paid Rs. 250 at McDonald's for 2 burgers"
+    - "Filled petrol worth 2000 at HP station"
+    - "Pharmacy bill: Paracetamol 50, Vitamin C 120"
+
+    Returns category, bill details (amounts, items, vendor) if applicable.
+    """
+    gemini_service = get_gemini_service()
+
+    result = await gemini_service.categorize_text(request.text)
+
+    logger.info(
+        "text_categorized",
+        text_length=len(request.text),
+        primary_category=result.primary_category,
+        category_matched=result.category_matched,
+    )
+
+    return result
+
