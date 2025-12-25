@@ -13,6 +13,7 @@ from app.models.schemas import (
     TaskStatusEnum,
     TaskStatusResponse,
     TextClassificationRequest,
+    FirebaseImageCategorizationRequest,
 )
 
 __all__ = [
@@ -28,5 +29,6 @@ __all__ = [
     "TaskStatusEnum",
     "TaskStatusResponse",
     "TextClassificationRequest",
+    "FirebaseImageCategorizationRequest",
 ]
 

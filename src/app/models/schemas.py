@@ -50,6 +50,12 @@ class TextClassificationRequest(ResponseModel):
     text: str = Field(..., min_length=1, max_length=10000, description="Text to classify (bill description, transaction, etc.)")
 
 
+class FirebaseImageCategorizationRequest(ResponseModel):
+    """Request to categorize image from Firebase."""
+    
+    firebase_id: str = Field(..., min_length=1, description="Transaction document ID with imageUrl")
+
+
 # ==================== Response Models ====================
 
 
