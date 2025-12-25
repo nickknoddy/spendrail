@@ -1,0 +1,45 @@
+# Ignore Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyo
+.pytest_cache/
+
+# Virtual environments
+.venv/
+venv/
+ENV/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Git
+.git/
+.gitignore
+
+# Build artifacts
+*.egg-info/
+dist/
+build/
+wheels/
+
+# Environment files (add manually on server)
+.env
+
+# Uploads (mount as volume)
+uploads/
+
+# Documentation
+*.md
+!README.md
+
+# UV lock file (included in build)
+# uv.lock
+
+# Misc
+.DS_Store
+Thumbs.db
+*.log

@@ -1,0 +1,15 @@
+[Unit]
+Description=Spend-Rail Image Categorization API
+After=docker.service
+Requires=docker.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+WorkingDirectory=/opt/spend-rail
+ExecStart=/usr/local/bin/docker-compose up -d
+ExecStop=/usr/local/bin/docker-compose down
+ExecReload=/usr/local/bin/docker-compose restart
+
+[Install]
+WantedBy=multi-user.target
