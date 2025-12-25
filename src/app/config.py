@@ -35,7 +35,7 @@ class Settings(BaseSettings):
     log_format: str = "console"  # "console" or "json"
 
     # CORS
-    cors_origins: str = "http://localhost:3000,http://localhost:8000"
+    cors_origins: str = "*"
 
     # Server
     host: str = "0.0.0.0"

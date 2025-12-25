@@ -35,7 +35,8 @@ class FirebaseService:
             
             # Look for credentials.json in multiple locations
             possible_paths = [
-                "credentials.json",  # Current directory
+                "/etc/secrets/credentials.json",  # Render.com secrets path
+                "credentials.json",  # Current directory / app root
                 "/app/credentials.json",  # Docker container path
                 os.path.join(os.path.dirname(__file__), "..", "..", "..", "credentials.json"),
             ]
