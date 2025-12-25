@@ -35,7 +35,7 @@ class Settings(BaseSettings):
     log_format: str = "console"  # "console" or "json"
 
     # CORS
-    cors_origins: str = "*"
+    cors_origins: str = "https://i5k43so0zakfco46i9ay.share.dreamflow.app, https://spendrail.web.app, *"
 
     # Server
     host: str = "0.0.0.0"
